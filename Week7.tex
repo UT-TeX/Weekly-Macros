@@ -1,0 +1,158 @@
+\documentclass[autodetect-engine,dvipdfmx]{jsarticle}
+
+\usepackage{newpxtext,amsmath,array}
+\usepackage[deluxe]{otf}
+\usepackage[breakable]{tcolorbox}
+
+\title{文書にMaintenance性を}
+\author{東大TeX愛好会}
+\date{Week6}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Week2でも話題になりましたが，「文書のメンテナンス性の高さ」という点において\LaTeX は優れています。このことを実感できるわかりやすい例を2つ取り上げてみたいと思います。
+\end{abstract}
+
+\part{「順列・組み合わせ」の記号}
+
+中学や高校の数学で必ずでてくるのが，順列や組み合わせという概念です。授業で一度は
+
+\begin{itemize}
+\item $n$個の元から$k$個を選んで並べる順列の総数は$_{n}\mathrm{P}_{k}$と表す
+\item $n$個の元から$k$個を選ぶ組み合わせの総数は$_{n}\mathrm{C}_{k}$と表す
+\end{itemize}
+
+のように習ったことと思います。しかし，意外と知られていないようですが，この記号は国際的に通用するわけではありません。あまり参照元として好ましくないかもしれませんが，一般の人がよく使用している記号を垣間みることができるWikipediaを見てみると，このことが実感できます（以下，選ぶ個数を表す$k$の代わりに$m$や$r$が混在しますが，これはWikipediaの記述が言語によって統一されていないことに由来していますので，気にしないでください）。
+
+日本語版Wikipedia「順列」では，順列の総数を表す記号として$_{n}P_{k}$，$^{n}P_{k}$，$P_{n,k}$，$P(n,k)$が挙げられています。同様に，「組合せ」では，選び方の総数を表す記号として$_{n}C_{k}$，$C(n,k)$が挙げられています。英語のPermutation，Combinationを基にしているので，一見世界共通のように誤解されがちですが，他の言語も見てみるとどうでしょう。
+
+\begin{table}[h]
+
+\centering
+
+\begin{tabular}{rl}
+\hline
+英語（Permutation）&$P_{k}^{n}$，$_{n}P_{k}$，$^{n}P_{k}$，$P_{n,k}$，$P(n,k)$\\\hline
+フランス語（Arrangement）&$A_{n}^{k}$\\\hline
+イタリア語（Disposizione）&$D_{n,k}$\\\hline
+中国語&$P(n,k)$，$A_{r}^{n}$\\\hline
+韓国語&$P(n,r)$\\\hline
+\end{tabular}
+
+\end{table}
+
+\begin{table}[h]
+
+\begin{tabular}{rl}
+\hline
+英語（Combination）&$C_{k}^{n}$，$_{n}C_{k}$，$^{n}C_{k}$，$C_{n,k}$，$C(n,k)$\\\hline
+フランス語（Combinaison）&$C_{n}^{k}$\\\hline
+イタリア語（Combinazione）&$C_{n,k}$\\\hline
+中国語&$C(n,k)$，$C_{r}^{n}$\\\hline
+韓国語&$_{n}C_{k}$，$^{n}C_{k}$，$C(n,r)$\\\hline
+\end{tabular}
+
+\end{table}
+
+順列については各言語の頭文字が使われ，一見して理解できないものもありますし，組み合わせについても，よく見ると指数の上下が逆になっている例も見受けられ，紛らわしいのが実情です。
+
+確かに，これらの概念の拡張（例えば組み合わせに対応する「二項係数」）には比較的通用する記号が存在し，対応する\LaTeX マクロが定義されていることもあります。しかし，標準の\LaTeX には，日本の初等数学でよく使われる記法を簡略化するマクロがありません。仮に「長文の中で何度も\verb@${}_n \mathrm{C}_k$@という記号を使っていたのに，急遽\verb@$\mathrm{C}(n,k)$@に変更しなければならなくなった！」という場合，どうすればよいでしょう。下付き文字や括弧といったありふれた記法だけを用いるため，ベタ書きしてしまうと探し出すのに一苦労です。
+
+$P$や$C$を用いた記号だけでもいろいろな流儀があることを考えると，こういう場合は初めに\LaTeX マクロを定義してマークアップするのが非常に重要です。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+%%% definition of \tlcomb{}{} for combination
+\newcommand{\tlcomb}[2]{%
+  \ensuremath{{}_{#1}\mathrm{C}_{#2}}%   definition 1
+%  \ensuremath{\mathrm{C}(#1,#2)}%        definition 2
+%  \ensuremath{{}^{#1}\mathrm{C}_{#2}}%   definition 3
+}
+%%% definition of \tlperm{}{} for permutation
+\newcommand{\tlperm}[2]{%
+  \ensuremath{{}_{#1}\mathrm{P}_{#2}}%   definition 1
+%  \ensuremath{\mathrm{P}(#1,#2)}%        definition 2
+%  \ensuremath{{}^{#1}\mathrm{P}_{#2}}%   definition 3
+}
+\end{verbatim}
+
+\end{tcolorbox}
+
+このマクロでは，本文中と数式環境中の両方で数式とみなされるように，\verb@\ensuremath@の中に入れて定義しました。もし\verb@\ensuremath@に入れずに定義していたならば，本文中で使用した場合に\verb@_@，\verb@^@，\verb@\mathrm@が
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+! Missing $ inserted.
+! LaTeX Error: \mathrm allowed only in math mode.
+\end{verbatim}
+
+\end{tcolorbox}
+
+というエラーになるはずです。
+
+\part{「ベクトルの内積」の記号}
+
+こちらもマークアップが非常に有効な例です。高校数学で学ぶベクトルの内積ですが，2つのベクトルの内積の記法として，分野によってさまざまな流儀が考えられます。この場合も，ある記法から別の記法に置き換えるのはベタ書きでは困難です。そこで，マクロの出番です。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+%%% definition of \tlinner{}{} for inner product
+\newcommand{\tlinner}[2]{%
+  \vec{#1} \cdot \vec{#2}%                         definition 1
+%  \left( \vec{#1}, \vec{#2} \right)%               definition 2
+%  \left\langle \vec{#1}, \vec{#2} \right\rangle%   definition 3
+}
+\end{verbatim}
+
+\end{tcolorbox}
+
+一見\verb@\cdot@を使うほうが入力が楽だと思うかもしれませんが，メンテナンス性という点では「その\verb@\cdot@が内積を表すのか，それとも積の記号なのか」がわからないという問題があります。マークアップすることで，\verb@\tlinner@の定義さえ変更すれば，文書にでてくるすべての内積の記号を変更できるという安心感が生まれます。
+
+\part{終わりに}
+
+今回のマクロは，少し\LaTeX に慣れた方ならすぐに中身を理解できるほど単純なものだと思います。マクロは難しいものだと思って敬遠しているとすれば，それはマークアップとしての\LaTeX のメリットを十分活用できていないことになります。
+
+今週のマクロでは会員がさまざまなレベルのマクロを披露しますが，本記事をきっかけにより広く\LaTeX の良さが伝われば幸いです。
+
+\begin{tcolorbox}[breakable]
+
+\begin{verbatim}
+\documentclass{jsarticle}
+%%% definition of \tlcomb{}{} for combination
+\newcommand{\tlcomb}[2]{%
+\ensuremath{{}_{#1}\mathrm{C}_{#2}}%   definition 1
+%  \ensuremath{\mathrm{C}(#1,#2)}%        definition 2
+%  \ensuremath{{}^{#1}\mathrm{C}_{#2}}%   definition 3
+}
+%%% definition of \tlperm{}{} for permutation
+\newcommand{\tlperm}[2]{%
+\ensuremath{{}_{#1}\mathrm{P}_{#2}}%   definition 1
+%  \ensuremath{\mathrm{P}(#1,#2)}%        definition 2
+%  \ensuremath{{}^{#1}\mathrm{P}_{#2}}%   definition 3
+}
+%%% definition of \tlinner{}{} for inner product
+\newcommand{\tlinner}[2]{%
+\vec{#1}\cdot\vec{#2}%                         definition 1
+%  \left( \vec{#1}, \vec{#2} \right)%               definition 2
+%  \left\langle \vec{#1}, \vec{#2} \right\rangle%   definition 3
+}
+\begin{document}
+異なる6枚のカードから3枚を選ぶ組み合わせの総数は\tlcomb{6}{3}通りです。
+異なる12枚のカードから5枚を選んで並べる順列の総数は\tlperm{12}{5}通りです。数式中でも使えます：
+\[
+\tlcomb{6}{3}=\frac{6\cdot 5\cdot 4}{3\cdot 2\cdot 1}=20
+\]
+
+2本のベクトル $\vec{a}$, $\vec{b}$ が次のように与えられているとき，それらの内積$\tlinner{a}{b}$を求めなさい。…
+\end{document}
+\end{verbatim}
+
+\end{tcolorbox}
+
+\end{document}

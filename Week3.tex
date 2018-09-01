@@ -1,0 +1,258 @@
+\documentclass[autodetect-engine,dvipdfmx]{jsarticle}
+
+\usepackage{newpxtext,amsmath,array}
+\usepackage[deluxe]{otf}
+\usepackage[breakable]{tcolorbox}
+
+\title{曜日計算}
+\author{東大TeX愛好会}
+\date{Week3}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+TeXを使って文章を作成する利点として，やはり様々な単純作業・計算を自動化できる点が挙げられます。そこで，\TeX のカウンタの紹介を兼ねて，今回は「年月日を入力したら，その日の曜日を表示するマクロ」を作ってみたいと思います。
+
+記事執筆後に，以下のマクロとほとんど同様の機能をもつ\verb@\曜@というマクロがokumacro.styに含まれていることが判明しました。結果として車輪の再発明的な記事に…
+\end{abstract}
+
+\part{ツェラーの公式}
+
+いきなり\TeX ソースを書き始めるのでは無く，まずはアルゴリズムを考えましょう。「曜日計算 公式」などで検索をかけると，次のような「ツェラーの公式」というものが見つかります。
+
+h百y年m月d日の曜日を求めることを考えます。ただし，1・2月は前の年の13・14月として計算します。（例えば2015年1月3日の場合，2014年13月3日とみなしてh=20, y=14, m=13, d=3となります）
+
+この時，
+
+\begin{tcolorbox}
+$W=y+\lfloor\dfrac{y}{4}\rfloor+\lfloor\dfrac{h}{4}\rfloor-2h+\lfloor\dfrac{13(m+1)}{5}\rfloor+d$
+\end{tcolorbox}
+
+を計算します。この$W$を7で割った余りをRとすると，曜日は次のように求まります。
+
+\begin{table}[h]
+
+\centering
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline
+R&0&1&2&3&4&5&6\\\hline
+曜日&土&日&月&火&水&木&金\\\hline
+\end{tabular}
+
+\end{table}
+
+これがツェラーの公式と呼ばれるものです。以下では，この計算を\TeX で実装することを考えていきます。
+
+\part{マクロの解説}
+
+上の計算を行う\TeX ソースは次の通りです。引数\verb@#1@に年，引数\verb@#2@に月，引数\verb@#3@に日を入力することを想定しています。（簡単のため，前述のものに適宜コメントを追加しています）
+
+\begin{tcolorbox}[breakable]
+
+\begin{verbatim}
+%%% 各種カウンタの準備 %%%%%%%%%%%%%%%
+\newcount\mycnth
+\newcount\mycnty
+\newcount\mycntm
+\newcount\mycntd
+\newcount\mycntW
+%
+%%% 日付の設定 %%%%%%%%%%%%%%%%%%%%%%
+\mycnty=#1 %ここではyは西暦4ケタそのままの値を代入してある
+\mycntm=#2
+\mycntd=#3
+%%% 1月,2月の条件分岐 %%%%%%%%%%%%%%%%
+\ifnum \mycntm<3
+  \advance \mycnty by -1
+  \advance \mycntm by 12
+\fi
+%
+%%% カウンタh,yの準備(h,yの値を用意する)
+\mycnth=\mycnty
+\divide\mycnth by 100
+\@tempcnta=\mycnth
+\multiply \@tempcnta by 100
+\advance \mycnty by -\@tempcnta
+%
+%%% Wにy,[y/4]を足す %%%%%%%%%%%%%%%%
+\advance \mycntW by \mycnty
+\divide \mycnty by 4
+\advance \mycntW by \mycnty
+%
+%%% Wに-2h,[h/4]を足す %%%%%%%%%%%%%%
+\multiply \mycnth by2
+\advance \mycntW by -\mycnth
+\divide \mycnth by 8
+\advance \mycntW by \mycnth
+%
+%%% Wに[13(m+1/5)]を足す %%%%%%%%%%%%
+\advance \mycntm by 1
+\multiply \mycntm by 13
+\divide \mycntm by 5
+\advance \mycntW by \mycntm
+%
+%%% Wにdを足す %%%%%%%%%%%%%%%%%%%%%%
+\advance \mycntW by \mycntd
+%
+%%% Wを7で割った余りを計算 %%%%%%%%%%%%
+\@tempcnta=\mycntW
+\divide \@tempcnta by 7
+\multiply \@tempcnta by 7
+\advance \mycntW by -\@tempcnta
+%
+%%% 余りに対応する曜日を出力 %%%%%%%%%%
+\ifcase \mycntW 土\or 日\or 月\or 火\or 水\or 木\or 金\fi
+\end{verbatim}
+
+\end{tcolorbox}
+
+（このマクロ内では\verb|\@tempcnta|を取り扱っているため，使用例ではまず，texファイル中で文字@を使用するために必要な命令である\verb@\makeatletter@を先に宣言し，また\verb|\@tempcnta|をいじった影響が外部に波及するのを防ぐために\verb@\bgroup@と\verb@\egroup@で囲ってあります。）
+
+以下では，このソースコードの完全理解を目指して，カウンタの用法を解説したいと思います。
+
+\section{\TeX におけるカウンタの用法}
+
+\TeX には，「カウンタ」という整数値を保存することができる変数型があります。通常の組版時には，章番号・節番号などを自動的に振るために使われますが，その機能を利用して，\TeX で整数演算を行うことが可能です。
+
+\subsection{カウンタの定義}
+
+カウンタを使うためには，まずはじめに\verb@\newcount\@という命令を用いてカウンタを定義する必要があります。今回のマクロでは，\verb@\mycnth@（my counter hの意）などを最初に定義しました。もちろん，カウンタ名は\verb@\hogecounter@など自分の好きな名前を用いれば良いのですが，\verb@\a@など一文字のカウンタ名は，既に内部で使用するカウンタとして定義されている可能性が高いので，なるべく避けた方が良いです。
+
+また，\verb|\@tempcnta|（temporary counter aの意）は一時的に使われるカウンタとして，予め\TeX 内部で準備されているものです。今回のマクロでも，一時的に「ちょっとだけ」必要な部分で使用しています。同様に，\verb|\@tempcntb|も一時的なカウンタとして用意されています。
+
+また，カウンタの初期値は0です。つまり，
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\hoge
+\end{verbatim}
+
+\end{tcolorbox}
+
+と定義した時点では，\verb@\hoge@には0が代入されています。
+
+\subsection{値の代入}
+
+カウンタに値を代入する作業は単純です。例えば，\verb@\fuga@というカウンタに100を代入したい場合，
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\hoge %カウンタ\hogeを準備した
+\hoge=100
+\end{verbatim}
+
+\end{tcolorbox}
+
+とすれば良いだけです。今回は，\verb@\mycnty@に引数\verb@#1@を，\verb@\mycntm@に引数\verb@#2@を，\verb@\mycntd@に引数\verb@#3@を代入しています。（\verb@\weekday{2020}{7}{24}@であれば，\verb@#1@=2020, \verb@#2@=7, \verb@#3@=24ということです。）
+
+\subsection{値の取り出し}
+
+カウンタの値を出力したい場合，\verb@\the@という制御綴を使用します。すなわち，
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\hoge
+\hoge=100
+
+カウンタhogeの値は\the\hoge です。
+\end{verbatim}
+
+\end{tcolorbox}
+
+というコードを実行すれば，以下のような出力が得られます。
+
+\begin{tcolorbox}
+\newcount\hoge
+\hoge=100
+
+カウンタhogeの値は\the\hoge です。
+\end{tcolorbox}
+
+\subsection{カウンタの四則演算}
+
+カウンタで四則演算をすることも出来ます。\TeX には\verb@\advance@や\verb@\multiply@といった制御綴が用意されています。使い方は単純なので，以下のソースコードを見ればよく分かるでしょう。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\piyo
+\piyo=10 %\piyoに10を代入
+\advance \piyo by 2 %\piyoに2を足す。以下，\piyoの値は12になる。
+\multiply \piyo by 3 %\piyoを3倍する。以下，\piyoの値は36となる。
+\advance \piyo by -5 %\piyoに-5を足す。以下，\piyoの値は31となる。
+\end{verbatim}
+
+\end{tcolorbox}
+
+ただし割り算を実行する\verb@\divide@だけは注意が必要です。多くのプログラム言語の整数型と同様に，カウンタの割り算では商が返されます。次の例を見てください。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\piyo
+\piyo=10
+\divide \piyo by 4
+\end{verbatim}
+
+\end{tcolorbox}
+
+このコードを実行すると，\verb@\piyo@の値は2.5でなく2となります。この性質は厄介に思われるかもしれませんが，今回のように床関数（ガウス記号）を考える場合には相性が良いと言えますね。
+
+\subsection{条件分岐}
+
+カウンタの値によって読み込ませるコードを制御するためには，\verb@\ifnum@や\verb@\ifcase@を使います。用法は以下のとおりです。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\ifnum (数orカウンタ1) (関係) (数orカウンタ2)
+ (真の場合のコード) \else (偽の場合のコード)
+\fi
+\end{verbatim}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\ifcase (数orカウンタ) (数orカウンタが0の場合のコード) \or (1の場合) \or (2の場合) … \or (nの場合)
+ \else (その他の場合)
+\fi
+\end{verbatim}
+
+\end{tcolorbox}
+
+例のように，\TeX では，if文は\verb@\fi@という制御綴で閉じなければなりません。また，\verb@\else@および偽の場合のコードは省略することも可能です。
+
+\subsection{剰余を求めるテクニック}
+
+今回のマクロでは，以上で述べてきた要素を組み合わせて，\TeX 上でツェラーの公式の計算を実装しました。ただし，最後の「Wを7で割った余りを求める」という段階においては，\TeX には剰余を直接求める制御綴がありませんので，テクニックで乗り切るしかありません。それについてご紹介します。
+
+以下のコードをご覧ください。10わる4の余りを計算しています。
+
+\begin{tcolorbox}
+
+\begin{verbatim}
+\newcount\piyo
+\piyo=10
+\@tempcnta=\piyo %\@tempcntaに\piyoの値をコピー
+\divide \@tempcnta by 4 %\@tempcntaが4で割られ，\@tempcntaの値が2になる。
+\multiply \@tempcnta by 4 %\@tempcntaに4が掛かり，\@tempcntaの値が8になる。
+\advance \piyo by -\@tempcnta %剰余2が求まる。
+\end{verbatim}
+
+\end{tcolorbox}
+
+このような，剰余を求めるテクニックは記憶に値します。
+
+\part{\LaTeX 流のカウンタ用法}
+
+さて，これまで解説してきたカウンタの用法は，全てが\TeX 自体に実装されている機能です。しかし，実際に私たちが\TeX として目にするもののほとんどは，\LaTeX と呼ばれるマクロパッケージを読み込んだ\TeX です。その場合，\verb@\newcounter@や\verb@\setcounter@などの，より高機能な制御綴を利用することもできます。それらについての解説は，この記事の趣旨からやや逸脱するので割愛しますが，「\LaTeX{} カウンタ 用法」などで検索していただければ，文献が見つかると思います。これからも\TeX プログラミングを楽しんでいただければ幸いです。
+
+\end{document}
