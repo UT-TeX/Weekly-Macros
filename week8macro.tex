@@ -1,0 +1,135 @@
+\documentclass[a4paper]{article}
+\usepackage[dvipdfmx]{graphicx,xcolor}
+\usepackage{scsnowman}
+\usepackage{url}
+\makeatletter
+%enusnowman
+\def\enusnowman{%
+\@ifnextchar[%
+\sctkzsym@snowman%
+\sctkzsym@@snowman%
+}
+\def\sctkzsym@snowman[#1]#2{%
+\def\sctkzsym@snowmannumeralscsnowman{%
+\scsnowman[#1]}%
+\expandafter\sctkzsym@@@snowmannumeral{%
+\csname c@#2\endcsname}%
+}
+\def\sctkzsym@@snowman#1{%
+\expandafter\sctkzsym@@snowmannumeral\expandafter{%
+\csname c@#1\endcsname}%
+}
+%scsnowmannumeral
+\def\sctkzsym@snowmannumeralscsnowman{\relax}
+\def\sctkzsym@snowmannumeralinterval{\relax}
+\def\scsnowmannumeral{%
+\@ifnextchar[%
+\sctkzsym@snowmannumeral%
+\sctkzsym@@snowmannumeral%
+}
+\def\sctkzsym@snowmannumeral[#1]#2{%
+\def\sctkzsym@snowmannumeralscsnowman{%
+\scsnowman[#1]}%
+\sctkzsym@@@snowmannumeral{#2}%
+}
+\def\sctkzsym@@snowmannumeral#1{%
+\def\sctkzsym@snowmannumeralscsnowman{%
+\scsnowman[]}%
+\sctkzsym@@@snowmannumeral{#1}%
+}
+\def\sctkzsym@@@snowmannumeral#1{%
+\expandafter\sctkzsym@snowmannumeralhead\number#18\sctkzsym@snowmannumeralinterval\sctkzsym@snowmannumeraltail}%
+\def\sctkzsym@snowmannumeralhead#18#2\sctkzsym@snowmannumeraltail{%
+\bgroup\def\sctkzsym@@snowmannumeralinterval{#2}%
+\edef\@tempa{\sctkzsym@snowmannumeralinterval}%
+\edef\@tempb{\sctkzsym@@snowmannumeralinterval}%
+\ifx\@tempa\@tempb%
+#1%
+\else%
+#1\sctkzsym@snowmannumeralscsnowman%
+\sctkzsym@snowmannumeralhead#2\sctkzsym@snowmannumeraltail%
+\fi\egroup%
+}
+\makeatother
+\def\k{\hskip\xkanjiskip}
+\title{今週のマクロ第\scsnowman[scale=2,adjustbaseline]週：数字の8だけ雪だるま化する}
+\author{domperor}
+\date{2018/1/6}
+\begin{document}
+\maketitle
+
+こんばんは，現東大\TeX 愛好会代表の\texttt{domperor}\footnote{えーっと，GitHubを貼っておきましょうか：\url{https://github.com/domperor/}}です。今週のマクロ\footnote{「今週のマクロ」コーナーはこちら：\url{http://ut-tex.org/weekly_macro.php}}第８週として，この記事を書いています。「今週のマクロ」が更新されるのも２年ぶりくらいでしょうか……（汗）。なお，この文書の.texファイルは\url{http://ut-tex.org/pdf/week8macro.tex}に置いてあります。
+
+\ 
+
+なんとなく作ってみた\k\verb|\enusnowman|\k ，\k\verb|\scsnowmannumeral|\k 命令の紹介をします。これらの命令は，\texttt{aminophen}さんの\texttt{scsnowman.sty}を使っています。これからPull Requestを投げようと思っています。\footnote{本音を言うと，GitHubの「Pull Request」機能をいまだ使ったことがないので，練習したいのです。}（2018年１月６日現在）
+
+\ 
+
+これらの命令は，半角数字の８だけを雪だるま化します。\k\verb|\roman|\k ，\k\verb|\romannumeral|\k 命令の，雪だるまVer.と思っていただければ差し支えありません。
+
+例えば，\k\verb|\scsnowmannumeral{9977}|\k ，\k\verb|\scsnowmannumeral{80189380}|\k は次のような出力となります。
+
+\hfil\scsnowmannumeral{9977}
+
+\hfil\scsnowmannumeral{80189380}
+
+
+\ 
+
+\ 
+
+また，\k\verb|\romannumeral|\k 命令と同様，カウンタを指定することも可能です。例えば，次の例では\k\verb|\hoge|\k カウンタの内容を表示しています。オプション引数\k\verb|[muffler=red]|\k も指定して，見た目をちょっと華やかにしてみました。
+
+\ 
+
+\newcount\hoge
+\hoge=8888809
+\hfil\scsnowmannumeral[muffler=red]\hoge
+
+\ 
+
+\ 
+
+最後に，\texttt{enumerate}環境中での使用です。この場合は\k\verb|\roman|\k 命令と同様，
+
+\ 
+
+\hfil\verb|\renewcommand{\labelenumi}{\enusnowman{enumi}}|
+
+\ 
+
+\noindent のように書きます。オプション引数も指定可能です。
+
+\begin{enumerate}
+\renewcommand{\labelenumi}{\enusnowman[hat=true,muffler=blue,adjustbaseline,arms=true,scale=2]{enumi}}
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\setcounter{enumi}{6}
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\setcounter{enumi}{16}
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\setcounter{enumi}{78}
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\item あいうえお
+\end{enumerate}
+
+\end{document}
